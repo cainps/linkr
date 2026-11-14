@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linkr — Encurtador + Analytics</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14171f;--mute:#6b7280;--line:#e5e7eb;--brand:#4f46e5;--brand2:#e0e7ff;--ok:#059669;--bad:#dc2626;--bar:#6366f1}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1015;--card:#171a22;--ink:#eceef3;--mute:#9aa1b0;--line:#272b36;--brand:#818cf8;--brand2:#25284a;--bar:#818cf8}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:19px;letter-spacing:-.02em}.logo span{color:var(--brand)}
+main{max-width:1080px;margin:0 auto;padding:20px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+h2{margin:0 0 12px;font-size:16px}
+input,select,button{font:inherit;color:inherit}
+input,select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 13px}
+button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+button.link{border:0;background:none;color:var(--brand);padding:2px 6px}
+button.danger{color:var(--bad)}
+.grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.stat b{display:block;font-size:28px;letter-spacing:-.02em}.stat small{color:var(--mute)}
+.form{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.form .full{grid-column:1/-1}
+@media(max-width:700px){.form{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--mute);font-weight:500;font-size:13px}.url{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute);font-size:13px}
+.pill{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--brand2);color:var(--brand)}.pill.off{background:#fee2e2;color:var(--bad)}
+.bar{display:grid;grid-template-columns:90px 1fr 44px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
+.bar i{display:block;height:8px;border-radius:4px;background:var(--bar)}.bar .t{background:var(--line);border-radius:4px}
+.err{color:var(--bad);font-size:13px;min-height:18px}.auth{max-width:380px;margin:60px auto}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}.hide{display:none}
+.tbl-wrap{overflow-x:auto}svg text{fill:var(--mute);font-size:10px}
+</style>
+</head>
+<body>
+<header><div class="logo">link<span>r</span></div><div class="row"><span id="who" style="color:var(--mute)"></span><button id="logout" class="hide">Sair</button></div></header>
+<main>
+  <section id="auth" class="card auth hide">
+    <h2 id="auth-title">Entrar</h2>
+    <div class="grid"><input id="email" type="email" placeholder="e-mail" autocomplete="username">
+    <input id="password" type="password" placeholder="senha (mín. 8 caracteres)" autocomplete="current-password">
+    <div class="err" id="auth-err"></div>
+    <button class="primary" id="auth-go">Entrar</button>
+    <button class="link" id="auth-switch">Não tem conta? Cadastre-se</button></div>
+  </section>
+
+  <section id="app" class="hide">
+    <div class="row" style="margin-bottom:12px"><h2 style="margin:0">Visão geral</h2><span class="sp"></span>
+      <select id="range" style="width:auto"><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="90">90 dias</option></select></div>
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card stat"><small>Cliques</small><b id="s-clicks">–</b></div>
+      <div class="card stat"><small>Visitantes únicos</small><b id="s-uniq">–</b></div>
+      <div class="card stat"><small>Links</small><b id="s-links">–</b></div>
+      <div class="card stat"><small>Top link</small><b id="s-top" style="font-size:20px">–</b></div>
+    </div>
+    <div class="card"><h2 id="chart-title">Cliques por dia</h2><div id="chart"></div></div>
+    <div class="grid g2" id="breakdowns"></div>
+
+    <div class="card"><h2>Novo link</h2>
+      <form class="form" id="new">
+        <input class="full" name="url" placeholder="https://site-com-url-muito-longa.com/pagina" required>
+        <input name="slug" placeholder="slug personalizado (opcional)">
+        <input name="title" placeholder="título (opcional)">
+        <input name="max_clicks" type="number" min="1" placeholder="limite de cliques">
+        <input name="expires_at" type="datetime-local" title="Expira em" class="full">
+        <div class="err full" id="new-err"></div>
+        <button class="primary full">Encurtar</button>
+      </form></div>
+
+    <div class="card"><div class="row"><h2 style="margin:0">Seus links</h2><span class="sp"></span><input id="q" placeholder="buscar…" style="width:200px"></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Link curto</th><th>Destino</th><th>Cliques</th><th>Status</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div class="row" style="margin-top:12px"><button id="prev">←</button><span id="pageinfo" style="color:var(--mute)"></span><button id="next">→</button></div>
+    </div>
+  </section>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let token=localStorage.getItem("token"),email=localStorage.getItem("email"),mode="login",page=1,total=0,per=10,selected=null;
+
+async function api(path,opts={}){
+  const r=await fetch(path,{...opts,headers:{"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{})},body:opts.body?JSON.stringify(opts.body):undefined});
+  if(r.status===401&&token){logout();throw new Error("Sessão expirada")}
+  const data=r.status===204?null:await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data?.error||"Erro "+r.status);
+  return data;
+}
+function logout(){token=null;localStorage.removeItem("token");localStorage.removeItem("email");render()}
+function render(){
+  $("#auth").classList.toggle("hide",!!token);$("#app").classList.toggle("hide",!token);
+  $("#logout").classList.toggle("hide",!token);$("#who").textContent=token?email:"";
+  if(token){loadAll()}
+}
+$("#auth-switch").onclick=()=>{mode=mode==="login"?"register":"login";
+  $("#auth-title").textContent=$("#auth-go").textContent=mode==="login"?"Entrar":"Criar conta";
+  $("#auth-switch").textContent=mode==="login"?"Não tem conta? Cadastre-se":"Já tem conta? Entrar"};
+$("#auth-go").onclick=async()=>{
+  try{const d=await api("/api/auth/"+mode,{method:"POST",body:{email:$("#email").value,password:$("#password").value}});
+    token=d.token;email=d.email;localStorage.setItem("token",token);localStorage.setItem("email",email);$("#auth-err").textContent="";render()}
+  catch(e){$("#auth-err").textContent=e.message}};
+$("#logout").onclick=logout;
+
+function bars(title,items){
+  const max=Math.max(1,...items.map(i=>i.clicks));
+  return `<div class="card"><h2>${esc(title)}</h2>${items.length?items.map(i=>`<div class="bar"><span>${esc(i.name)}</span><span class="t"><i style="width:${i.clicks/max*100}%"></i></span><span>${i.clicks}</span></div>`).join(""):'<small style="color:var(--mute)">Sem dados</small>'}</div>`}
+function lineChart(days){
+  const W=1000,H=180,p=24,max=Math.max(1,...days.map(d=>d.clicks)),n=days.length;
+  const x=i=>p+(n===1?0:i*(W-2*p)/(n-1)),y=v=>H-p-(v/max)*(H-2*p);
+  const pts=days.map((d,i)=>`${x(i)},${y(d.clicks)}`).join(" ");
+  const step=Math.ceil(n/8);
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Cliques por dia">
+   ${[0,.5,1].map(t=>`<line x1="${p}" x2="${W-p}" y1="${y(max*t)}" y2="${y(max*t)}" stroke="var(--line)"/><text x="0" y="${y(max*t)+3}">${Math.round(max*t)}</text>`).join("")}
+   <polygon points="${p},${H-p} ${pts} ${x(n-1)},${H-p}" fill="var(--bar)" opacity=".12"/>
+   <polyline points="${pts}" fill="none" stroke="var(--bar)" stroke-width="2.5" stroke-linejoin="round"/>
+   ${days.map((d,i)=>i%step===0?`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${esc(d.date.slice(5))}</text>`:"").join("")}
+   ${days.map((d,i)=>`<circle cx="${x(i)}" cy="${y(d.clicks)}" r="${n>45?0:3}" fill="var(--bar)"><title>${esc(d.date)}: ${d.clicks}</title></circle>`).join("")}</svg>`}
+
+async function loadReport(){
+  const days=$("#range").value;
+  const r=selected?await api(`/api/links/${selected.id}/analytics?days=${days}`):await api(`/api/analytics/overview?days=${days}`);
+  $("#s-clicks").textContent=r.total_clicks;$("#s-uniq").textContent=r.unique_visitors;
+  if(!selected){$("#s-links").textContent=r.total_links;$("#s-top").textContent=r.top_links?.[0]?("/"+r.top_links[0].slug):"–"}
+  $("#chart-title").innerHTML=selected?`Cliques por dia — <span class="pill">/${esc(selected.slug)}</span> <button class="link" id="clear">ver todos</button>`:"Cliques por dia";
+  if($("#clear"))$("#clear").onclick=()=>{selected=null;loadReport()};
+  $("#chart").innerHTML=lineChart(r.by_day);
+  $("#breakdowns").innerHTML=bars("Países",r.countries)+bars("Dispositivos",r.devices)+bars("Navegadores",r.browsers)+bars("Origem (referrer)",r.referrers);
+}
+async function loadLinks(){
+  const d=await api(`/api/links?page=${page}&per_page=${per}&q=${encodeURIComponent($("#q").value)}`);total=d.total;
+  $("#rows").innerHTML=d.items.map(l=>`<tr>
+    <td><b>/${esc(l.slug)}</b><br><button class="link" data-copy="${esc(l.short_url)}">copiar</button></td>
+    <td><div class="url" title="${esc(l.target_url)}">${esc(l.title||"")} ${esc(l.target_url)}</div></td>
+    <td>${l.click_count}${l.max_clicks?` / ${l.max_clicks}`:""}</td>
+    <td><span class="pill ${l.is_active?"":"off"}">${l.is_active?"ativo":"pausado"}</span>${l.expires_at?`<br><small style="color:var(--mute)">expira ${esc(l.expires_at)}</small>`:""}</td>
+    <td style="white-space:nowrap"><button class="link" data-stats="${l.id}" data-slug="${esc(l.slug)}">stats</button>
+      <button class="link" data-toggle="${l.id}" data-on="${l.is_active}">${l.is_active?"pausar":"ativar"}</button>
+      <button class="link danger" data-del="${l.id}">excluir</button></td></tr>`).join("")||'<tr><td colspan="5" style="color:var(--mute)">Nenhum link ainda.</td></tr>';
+  $("#pageinfo").textContent=`página ${page} de ${Math.max(1,Math.ceil(total/per))} · ${total} links`;
+}
+$("#rows").onclick=async e=>{const b=e.target.closest("button");if(!b)return;
+  try{
+    if(b.dataset.copy){await navigator.clipboard.writeText(b.dataset.copy);b.textContent="copiado!";setTimeout(()=>b.textContent="copiar",1200)}
+    else if(b.dataset.stats){selected={id:b.dataset.stats,slug:b.dataset.slug};await loadReport();scrollTo({top:0,behavior:"smooth"})}
+    else if(b.dataset.toggle){await api("/api/links/"+b.dataset.toggle,{method:"PATCH",body:{is_active:b.dataset.on!=="true"}});loadLinks()}
+    else if(b.dataset.del&&confirm("Excluir este link e todo o histórico de cliques?")){await api("/api/links/"+b.dataset.del,{method:"DELETE"});if(selected?.id==b.dataset.del)selected=null;loadAll()}
+  }catch(err){alert(err.message)}};
+$("#new").onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const body={url:f.url};
+  if(f.slug)body.slug=f.slug;if(f.title)body.title=f.title;if(f.max_clicks)body.max_clicks=+f.max_clicks;
+  if(f.expires_at)body.expires_at=new Date(f.expires_at).toISOString();
+  try{await api("/api/links",{method:"POST",body});e.target.reset();$("#new-err").textContent="";page=1;loadAll()}catch(err){$("#new-err").textContent=err.message}};
+$("#q").oninput=()=>{page=1;loadLinks()};$("#range").onchange=loadReport;
+$("#prev").onclick=()=>{if(page>1){page--;loadLinks()}};$("#next").onclick=()=>{if(page*per<total){page++;loadLinks()}};
+function loadAll(){loadReport().catch(()=>{});loadLinks().catch(()=>{})}
+render();
+</script>
+</body></html>
