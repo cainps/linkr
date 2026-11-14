@@ -5,6 +5,10 @@ Projeto de portfólio
 
 Stack: Python 3.11+, Flask, SQLite (sem ORM, SQL puro), JWT, front-end em HTML/JS puro (SVG para os gráficos). Zero build.
 
+- Cadastro e login com JWT
+- Links com slug aleatório ou personalizado, expiração e limite de cliques
+- Dashboard com cliques por dia, países, dispositivos, navegadores e origens
+- QR code de cada link, para visualizar e baixar
 ## Rodando
 
 ```bash
@@ -45,6 +49,7 @@ users (1) ──< links (1) ──< clicks
 | GET | `/api/links?page=&per_page=&q=` | paginação + busca |
 | GET/PATCH/DELETE | `/api/links/:id` | só do dono (outro usuário recebe 404) |
 | GET | `/api/links/:id/analytics?days=30` | cliques/dia, únicos, países, devices, browsers, referrers |
+| GET | `/api/links/:id/qr.svg` | QR code do link curto (imagem SVG) |
 | GET | `/api/analytics/overview?days=30` | o mesmo, agregado + top links |
 | GET | `/:slug` | **302** para o destino e registra o clique |
 
@@ -64,4 +69,4 @@ users (1) ──< links (1) ──< clicks
 - **País**: não há base GeoIP embutida. Vem do header `CF-IPCountry` (Cloudflare) ou `X-Country`; sem eles, fica `Unknown`. Para geolocalizar por IP, integrar MaxMind GeoLite2.
 - Rate limit de login é em memória (por processo); em produção, Redis.
 - SQLite escreve um clique por vez; para alto volume, trocar por Postgres e gravar cliques de forma assíncrona (fila) com agregação diária em tabela de rollup.
-- Ideias: QR code, domínio customizado, UTM builder, exportar CSV, testes de carga.
+- Ideias: domínio customizado, UTM builder, exportar CSV, testes de carga.
