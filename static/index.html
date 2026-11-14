@@ -74,6 +74,13 @@ th{color:var(--mute);font-weight:500;font-size:13px}.url{max-width:280px;overflo
     </div>
   </section>
 </main>
+<dialog id="qr-dialog" style="border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:18px;text-align:center">
+  <img id="qr-img" alt="QR code do link" width="240" height="240" style="background:#fff;border-radius:8px">
+  <div class="row" style="justify-content:center;margin-top:12px">
+    <a id="qr-dl" class="pill">baixar</a>
+    <button onclick="this.closest('dialog').close()">fechar</button>
+  </div>
+</dialog>
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -134,6 +141,7 @@ async function loadLinks(){
     <td>${l.click_count}${l.max_clicks?` / ${l.max_clicks}`:""}</td>
     <td><span class="pill ${l.is_active?"":"off"}">${l.is_active?"ativo":"pausado"}</span>${l.expires_at?`<br><small style="color:var(--mute)">expira ${esc(l.expires_at)}</small>`:""}</td>
     <td style="white-space:nowrap"><button class="link" data-stats="${l.id}" data-slug="${esc(l.slug)}">stats</button>
+      <button class="link" data-qr="${l.id}" data-slug="${esc(l.slug)}">QR</button>
       <button class="link" data-toggle="${l.id}" data-on="${l.is_active}">${l.is_active?"pausar":"ativar"}</button>
       <button class="link danger" data-del="${l.id}">excluir</button></td></tr>`).join("")||'<tr><td colspan="5" style="color:var(--mute)">Nenhum link ainda.</td></tr>';
   $("#pageinfo").textContent=`página ${page} de ${Math.max(1,Math.ceil(total/per))} · ${total} links`;
@@ -142,6 +150,13 @@ $("#rows").onclick=async e=>{const b=e.target.closest("button");if(!b)return;
   try{
     if(b.dataset.copy){await navigator.clipboard.writeText(b.dataset.copy);b.textContent="copiado!";setTimeout(()=>b.textContent="copiar",1200)}
     else if(b.dataset.stats){selected={id:b.dataset.stats,slug:b.dataset.slug};await loadReport();scrollTo({top:0,behavior:"smooth"})}
+    else if(b.dataset.qr){
+  const r=await fetch(`/api/links/${b.dataset.qr}/qr.svg`,{headers:{Authorization:"Bearer "+token}});
+  if(!r.ok)throw new Error("Não foi possível gerar o QR");
+  const url=URL.createObjectURL(await r.blob());
+  $("#qr-img").src=url;$("#qr-dl").href=url;$("#qr-dl").download=`qr-${b.dataset.slug}.svg`;
+  $("#qr-dialog").showModal();
+}
     else if(b.dataset.toggle){await api("/api/links/"+b.dataset.toggle,{method:"PATCH",body:{is_active:b.dataset.on!=="true"}});loadLinks()}
     else if(b.dataset.del&&confirm("Excluir este link e todo o histórico de cliques?")){await api("/api/links/"+b.dataset.del,{method:"DELETE"});if(selected?.id==b.dataset.del)selected=null;loadAll()}
   }catch(err){alert(err.message)}};

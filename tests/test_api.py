@@ -168,3 +168,13 @@ def test_overview(client):
     client.get("/ovw", headers=CHROME)
     o = client.get("/api/analytics/overview?days=7", headers=h).json
     assert o["total_links"] == 1 and o["total_clicks"] == 1 and o["top_links"][0]["slug"] == "ovw" and len(o["by_day"]) == 7
+
+
+def test_qr_code(client):
+    pytest.importorskip("segno")
+    h = register(client)
+    link = make(client, h, slug="qrtest").json
+    r = client.get(f"/api/links/{link['id']}/qr.svg", headers=h)
+    assert r.status_code == 200 and r.mimetype == "image/svg+xml" and b"<svg" in r.data
+    h2 = register(client, "b@x.com")
+    assert client.get(f"/api/links/{link['id']}/qr.svg", headers=h2).status_code == 404   # outro usuário não acessa

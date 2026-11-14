@@ -1,5 +1,7 @@
+import io
+import segno
 import sqlite3
-from flask import Blueprint, g, jsonify, request, current_app
+from flask import Blueprint, g, jsonify, request, current_app, Response
 
 from .auth import login_required
 from .db import get_db
@@ -111,3 +113,14 @@ def delete_link(link_id):
     get_db().execute("DELETE FROM links WHERE id = ?", (link_id,))   # clicks removidos via ON DELETE CASCADE
     get_db().commit()
     return "", 204
+
+@bp.get("/<int:link_id>/qr.svg")
+@login_required
+def link_qr(link_id):
+    row = _owned(link_id)                      # só o dono vê o QR do seu link
+    if not row:
+        return jsonify(error="Link não encontrado"), 404
+    buf = io.BytesIO()                          # "arquivo na memória" para não gravar nada no disco
+    segno.make(serialize(row)["short_url"], error="m").save(
+        buf, kind="svg", scale=8, border=2, dark="#000", light="#fff")
+    return Response(buf.getvalue(), mimetype="image/svg+xml")
