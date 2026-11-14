@@ -1,5 +1,5 @@
 # Linkr — Encurtador de URLs + Analytics
-
+![Dashboard do Linkr](docs/dashboard.png)
 Projeto de portfólio 
 **autenticação, regras de negócio, API REST, modelagem relacional, índices/otimização de queries e um dashboard de analytics.**
 
